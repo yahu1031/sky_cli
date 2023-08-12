@@ -9,6 +9,6 @@ final skyHome = path.join(home, '.sky');
 
 final cliDir = path.join(skyHome, 'cli');
 
-final latestDart = path.join('.', 'sdk', 'bin', 'dart');
+final latestDart = path.join(skyHome, 'dart-sdk', 'sdk', 'bin', 'dart');
 
 final Logger logger = Logger();

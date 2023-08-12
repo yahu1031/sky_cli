@@ -8,7 +8,6 @@ import 'package:path/path.dart' as path;
 import 'package:sky/src/commands/commands.dart';
 import 'package:sky/src/commands/git.dart';
 import 'package:sky/src/global.dart' as global;
-import 'package:sky/src/global.dart';
 import 'package:sky/src/version.dart';
 
 /// {@template sky_command_runner}
@@ -89,53 +88,65 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
   }
 
   Future<void> init() async {
-    if (Directory(global.skyHome).existsSync()) {
+    final skyHomeExists = Directory(global.skyHome).existsSync();
+    final dartSdkExists =
+        Directory(path.join(global.skyHome, 'dart-sdk')).existsSync();
+    final cliDirExists = Directory(global.cliDir).existsSync();
+    if (skyHomeExists && dartSdkExists && cliDirExists) {
       return;
     }
     Directory(global.skyHome).createSync(recursive: true);
     final initProcess = _logger.progress('Initializing HDFC SKY...');
     try {
-      await git.clone(
-        user: 'dart-lang',
-        repo: 'sdk',
-        outputDirectory: 'dart-sdk',
-      );
-      await git.clone(
-        user: 'yahu1031',
-        repo: 'sky_cli',
-        outputDirectory: 'cli',
-      );
-      await SetupCommand(logger: logger)
-          .pubGet(path: cliDir, exe: global.latestDart);
-      _logger.detail('Building HDFC SKY CLI...');
-      await Process.start(
-        global.latestDart,
-        [
-          'compile',
-          'exe',
-          'bin/sky.dart',
-          '-o',
-          path.join(global.skyHome, 'sky'),
-          '--target-os',
-          Platform.operatingSystem
-        ],
-        workingDirectory: global.cliDir,
-        runInShell: true,
-        includeParentEnvironment: false,
-      );
-      _logger.detail('Granting HDFC SKY CLI permissions...');
-      await Process.start(
-        'chmod',
-        ['+x', 'sky'],
-        workingDirectory: global.skyHome,
-        runInShell: true,
-        includeParentEnvironment: false,
-      );
-      _logger.detail('Adding HDFC SKY CLI to PATH...');
+      if (!dartSdkExists) {
+        await git.clone(
+          user: 'dart-lang',
+          repo: 'sdk',
+          outputDirectory: 'dart-sdk',
+        );
+      }
+      if (cliDirExists) {
+        await git.clone(
+          user: 'yahu1031',
+          repo: 'sky_cli',
+          outputDirectory: 'cli',
+        );
+      }
+      if (cliDirExists && dartSdkExists) {
+        await SetupCommand(logger: global.logger)
+            .pubGet(path: global.cliDir, exe: global.latestDart);
+        _logger.detail('Building HDFC SKY CLI...');
+        await Process.start(
+          global.latestDart,
+          [
+            'compile',
+            'exe',
+            'bin/sky.dart',
+            '-o',
+            path.join(global.skyHome, 'sky'),
+            '--target-os',
+            Platform.operatingSystem
+          ],
+          workingDirectory: global.cliDir,
+          runInShell: true,
+          includeParentEnvironment: false,
+        );
+      }
+      if (File(path.join(global.skyHome, 'sky')).existsSync()) {
+        _logger.detail('Granting HDFC SKY CLI permissions...');
+        await Process.start(
+          'chmod',
+          ['+x', 'sky'],
+          workingDirectory: global.skyHome,
+          runInShell: true,
+          includeParentEnvironment: false,
+        );
+      }
       for (final rc in ['.zshrc', '.bashrc']) {
         final rcData = await File(path.join(global.home, rc)).readAsString();
         final export = '\nexport PATH="\$PATH:${global.skyHome}"\n';
         if (!rcData.contains(export)) {
+          _logger.detail('Adding HDFC SKY CLI to $rc...');
           await File(path.join(global.home, rc)).writeAsString(
             export,
             mode: FileMode.append,
