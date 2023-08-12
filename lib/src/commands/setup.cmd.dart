@@ -36,6 +36,7 @@ class SetupCommand extends Command<int> {
 
   @override
   Future<int> run() async {
+    await isHDFCproject();
     final progress = _logger.progress('Setting up the project');
     try {
       await _checkPackagesCode();
