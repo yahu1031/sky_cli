@@ -8,6 +8,7 @@ import 'package:path/path.dart' as path;
 import 'package:sky/src/commands/commands.dart';
 import 'package:sky/src/commands/git.dart';
 import 'package:sky/src/global.dart' as global;
+import 'package:sky/src/global.dart';
 import 'package:sky/src/version.dart';
 
 /// {@template sky_command_runner}
@@ -94,18 +95,18 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
     Directory(global.skyHome).createSync(recursive: true);
     final initProcess = _logger.progress('Initializing HDFC SKY...');
     try {
-      _logger.detail('Cloning dart-sdk 3.*.* ...');
       await git.clone(
         user: 'dart-lang',
         repo: 'sdk',
         outputDirectory: 'dart-sdk',
       );
-      _logger.detail('Cloning HDFC SKY CLI...');
       await git.clone(
         user: 'yahu1031',
         repo: 'sky_cli',
         outputDirectory: 'cli',
       );
+      await SetupCommand(logger: logger)
+          .pubGet(path: cliDir, exe: global.latestDart);
       _logger.detail('Building HDFC SKY CLI...');
       await Process.start(
         global.latestDart,

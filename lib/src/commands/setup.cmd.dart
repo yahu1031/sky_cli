@@ -137,7 +137,7 @@ class SetupCommand extends Command<int> {
       if (infiniteScrollPagination != null) {
         await _fixInfiniteScrollPagination(infiniteScrollPagination);
       }
-      await _pubGet();
+      await pubGet();
       await _podInstall();
       progress.complete('Packages code checked');
     } catch (e, s) {
@@ -309,15 +309,16 @@ class SetupCommand extends Command<int> {
     }
   }
 
-  Future<void> _pubGet() async {
+  Future<void> pubGet({String? path, String exe = 'flutter'}) async {
     final pubProgress = _logger.progress('Fetching packages...');
     try {
-      _logger
-          .detail('Executing `flutter pub get` in ${Directory.current.path}');
+      _logger.detail(
+        'Executing `flutter pub get` in ${path ?? Directory.current.path}',
+      );
       final pubGet = await Process.start(
-        'flutter',
+        exe,
         ['pub', 'get'],
-        workingDirectory: Directory.current.path,
+        workingDirectory: path ?? Directory.current.path,
       );
       pubGet.stdout.transform(utf8.decoder).listen(_logger.detail);
       pubGet.stderr.transform(utf8.decoder).listen(_logger.err);
