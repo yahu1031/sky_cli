@@ -108,10 +108,26 @@ class UpgradeCommand extends Command<int> {
     final isUptoDate = await isLatest();
     if (!isUptoDate) {
       _logger
-        ..alert('┌─────────────────────────┐')
-        ..alert('│    Update Available.    │')
-        ..alert('│    Run "sky upgrade"    │')
-        ..alert('└─────────────────────────┘');
+        ..warn(
+          '┌─────────────────────────┐',
+          style: (message) => yellow.wrap(styleBold.wrap(message)),
+          tag: '',
+        )
+        ..warn(
+          '│    Update Available.    │',
+          style: (message) => yellow.wrap(styleBold.wrap(message)),
+          tag: '',
+        )
+        ..warn(
+          '│    Run "sky upgrade"    │',
+          style: (message) => yellow.wrap(styleBold.wrap(message)),
+          tag: '',
+        )
+        ..warn(
+          '└─────────────────────────┘',
+          style: (message) => yellow.wrap(styleBold.wrap(message)),
+          tag: '',
+        );
     }
   }
 }
