@@ -50,20 +50,20 @@ class UpgradeCommand extends Command<int> {
         await scriptFile.delete(recursive: true);
       }
       _logger.detail('Compiling a new HDFC SKY CLI...');
+      final compileArgs = [
+        'compile',
+        'exe',
+        'bin/sky.dart',
+        '-o',
+        p.join(skyHome, 'sky'),
+        '--target-os',
+        Platform.operatingSystem
+      ];
       final pr = await Process.start(
         latestDart,
-        [
-          'compile',
-          'exe',
-          'bin/sky.dart',
-          '-o',
-          p.join(skyHome, 'sky'),
-          '--target-os',
-          Platform.operatingSystem
-        ],
+        compileArgs,
         workingDirectory: cliDir,
         runInShell: true,
-        includeParentEnvironment: false,
       );
       pr.stdout.transform(utf8.decoder).listen(_logger.detail);
       pr.stderr.transform(utf8.decoder).listen(_logger.err);
@@ -112,6 +112,17 @@ class UpgradeCommand extends Command<int> {
       return currentVersion == latestVersion;
     } catch (e) {
       rethrow;
+    }
+  }
+
+  Future<void> updatePrompt() async {
+    final isUptoDate = await isLatest();
+    if (!isUptoDate) {
+      _logger
+        ..alert('┌─────────────────────────┐')
+        ..alert('│    Update Available.    │')
+        ..alert('│    Run "sky upgrade"    │')
+        ..alert('└─────────────────────────┘');
     }
   }
 }

@@ -10,6 +10,7 @@ import 'package:sky/src/commands/commands.dart';
 import 'package:sky/src/commands/git.dart';
 import 'package:sky/src/global.dart' as global;
 import 'package:sky/src/version.dart';
+import 'package:system_info2/system_info2.dart';
 
 /// {@template sky_command_runner}
 /// A [CommandRunner] for the CLI.
@@ -94,32 +95,32 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
   }
 
   Future<void> init() async {
-    final isUptoDate = await UpgradeCommand(logger: global.logger).isLatest();
-    if (!isUptoDate) {
-      _logger
-        ..alert('┌─────────────────────────┐')
-        ..alert('│    Update Available.    │')
-        ..alert('│    Run "sky upgrade"    │')
-        ..alert('└─────────────────────────┘');
-    }
     final skyHomeExists = Directory(global.skyHome).existsSync();
     final dartSdkExists =
         Directory(path.join(global.skyHome, 'dart-sdk')).existsSync();
     final cliDirExists = Directory(global.cliDir).existsSync();
     if (skyHomeExists && dartSdkExists && cliDirExists) {
+      await UpgradeCommand(logger: global.logger).updatePrompt();
       return;
     }
     Directory(global.skyHome).createSync(recursive: true);
     final initProcess = _logger.progress('Initializing HDFC SKY...');
     try {
       if (!dartSdkExists) {
-        await git.clone(
-          user: 'dart-lang',
-          repo: 'sdk',
-          outputDirectory: 'dart-sdk',
+        final dartSdkUrl = 'https://storage.googleapis.com/dart-archive/'
+            'channels/stable/release/latest/sdk/dartsdk-'
+            '${Platform.operatingSystem}-'
+            '${SysInfo.rawKernelArchitecture.contains('arm') ? 'arm64' : 'x64'}-release.zip';
+        await global.downloadFile(dartSdkUrl, 'dart-sdk.zip');
+        // unzip the file
+        await global.unzipFile(
+          path.join(global.skyHome, 'dart-sdk.zip'),
+          Directory(global.skyHome),
         );
+        _logger.detail('Deleting the dart-sdk.zip file');
+        await File(path.join(global.skyHome, 'dart-sdk.zip')).delete();
       }
-      if (cliDirExists) {
+      if (!cliDirExists) {
         await git.clone(
           user: 'yahu1031',
           repo: 'sky_cli',
@@ -180,6 +181,7 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
         skyFile.deleteSync();
       }
       initProcess.complete('Initialized HDFC SKY');
+      await UpgradeCommand(logger: global.logger).updatePrompt();
     } catch (e, s) {
       initProcess
         ..fail('Failed Initializing')
