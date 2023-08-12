@@ -51,20 +51,25 @@ class SetupCommand extends Command<int> {
   }
 
   Future<Package?> _fetchPackageFromLock(String packageName) async {
+    final progress = _logger.progress('Looking up into HDFC SKY project...');
     try {
       final lockFile = File(p.join(Directory.current.path, 'pubspec.lock'));
       if (!lockFile.existsSync()) {
+        progress.fail();
         _logger.err('No HDFC SKY project found. Please run `sky clone` first.');
         exit(1);
       }
+      progress.update('Reading project...');
       final lock = await lockFile.readAsString();
       final yaml = loadYaml(lock);
       // convert yaml to json
       final yamlString = jsonEncode(yaml);
       final lockMap =
           LockMap.fromJson(jsonDecode(yamlString) as Map<String, dynamic>);
+      progress.complete('Successfully read project');
       return lockMap.packages[packageName];
     } catch (e) {
+      progress.fail();
       _logger
         ..err('Failed checking packages version.')
         ..err('Error : $e');
