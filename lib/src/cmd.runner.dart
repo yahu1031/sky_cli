@@ -27,12 +27,12 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
     argParser
       ..addFlag(
         'version',
-        abbr: 'v',
-        negatable: false,
         help: 'Print the current version.',
       )
       ..addFlag(
         'verbose',
+        abbr: 'v',
+        negatable: false,
         help: 'Noisy logging, including all shell commands executed.',
       );
 
