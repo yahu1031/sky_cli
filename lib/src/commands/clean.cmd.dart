@@ -66,7 +66,7 @@ class CleanCommand extends Command<int> {
         _logger
           ..detail('gradlew file not found')
           ..detail(
-            'Creating a new gradlew file in ${p.join(Directory.current.path, 'android')}',
+            '''Creating a new gradlew file in ${p.join(Directory.current.path, 'android')}''',
           );
         await gradlewFile.create(recursive: true);
         final url = Uri.parse(

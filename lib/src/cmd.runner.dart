@@ -94,23 +94,26 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
     return exitCode;
   }
 
+  bool get _cliDirExists => Directory(global.cliDir).existsSync();
+
+  bool get _skyHomeExists => Directory(global.skyHome).existsSync();
+
+  bool get _dartSdkExists =>
+      Directory(path.join(global.skyHome, 'dart-sdk')).existsSync();
+
   Future<void> init() async {
-    final skyHomeExists = Directory(global.skyHome).existsSync();
-    final dartSdkExists =
-        Directory(path.join(global.skyHome, 'dart-sdk')).existsSync();
-    final cliDirExists = Directory(global.cliDir).existsSync();
-    if (skyHomeExists && dartSdkExists && cliDirExists) {
+    if (_skyHomeExists && _dartSdkExists && _cliDirExists) {
       await UpgradeCommand(logger: global.logger).updatePrompt();
       return;
     }
     Directory(global.skyHome).createSync(recursive: true);
     final initProcess = _logger.progress('Initializing HDFC SKY...');
     try {
-      if (!dartSdkExists) {
+      if (!_dartSdkExists) {
         final dartSdkUrl = 'https://storage.googleapis.com/dart-archive/'
             'channels/stable/release/latest/sdk/dartsdk-'
             '${Platform.operatingSystem}-'
-            '${SysInfo.rawKernelArchitecture.contains('arm') ? 'arm64' : 'x64'}-release.zip';
+            '''${SysInfo.rawKernelArchitecture.contains('arm') ? 'arm64' : 'x64'}-release.zip''';
         await global.downloadFile(dartSdkUrl, 'dart-sdk.zip');
         // unzip the file
         await global.unzipFile(
@@ -120,14 +123,14 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
         _logger.detail('Deleting the dart-sdk.zip file');
         await File(path.join(global.skyHome, 'dart-sdk.zip')).delete();
       }
-      if (!cliDirExists) {
+      if (!_cliDirExists) {
         await git.clone(
           user: 'yahu1031',
           repo: 'sky_cli',
           outputDirectory: 'cli',
         );
       }
-      if (cliDirExists && dartSdkExists) {
+      if (_cliDirExists && _dartSdkExists) {
         await SetupCommand(logger: global.logger)
             .pubGet(path: global.cliDir, exe: global.latestDart);
         _logger.detail('Building HDFC SKY CLI...');
@@ -183,10 +186,11 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
       initProcess.complete('Initialized HDFC SKY');
       await UpgradeCommand(logger: global.logger).updatePrompt();
     } catch (e, s) {
-      initProcess
-        ..fail('Failed Initializing')
-        ..fail(e.toString());
-      _logger.detail('Stacktrace: $s');
+      initProcess.fail('Failed Initializing');
+      _logger
+        ..detail(e.toString())
+        ..detail('Stacktrace:')
+        ..detail('$s');
       exit(ExitCode.software.code);
     }
   }

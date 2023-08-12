@@ -1,6 +1,6 @@
 name: sky
 description: HDFC Sky CLI tool for flutter project.
-version: 1.0.0+2
+version: 1.1.0
 publish_to: none
 
 environment:
@@ -33,4 +33,4 @@ dev_dependencies:
   very_good_analysis: ^5.0.0
 
 executables:
-  ? sky
+  sky:

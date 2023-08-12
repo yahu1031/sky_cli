@@ -16,7 +16,7 @@ class Git {
 
   final Logger _logger = logger;
 
-  /// Clones the git repository located at [url] into the [outputDirectory].
+  /// Clones the git [repo] from [user] into the [outputDirectory].
   /// `git clone <url> ...<args> <outputDirectory>`
   Future<void> clone({
     required String user,

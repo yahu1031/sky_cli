@@ -86,7 +86,7 @@ class SetupCommand extends Command<int> {
       final lockFile = File(p.join(Directory.current.path, 'pubspec.lock'));
       if (!lockFile.existsSync()) {
         _logger.detail(
-          "Pubspec.lock for HDFC SKY project wasn't found at ${Directory.current.path}",
+          '''Pubspec.lock for HDFC SKY project wasn't found at ${Directory.current.path}''',
         );
         progress.fail();
         _logger.err('No HDFC SKY project found. Please run `sky clone` first.');
@@ -160,7 +160,7 @@ class SetupCommand extends Command<int> {
       // check if infinite_scroll_pagination is installed in _pubCache
       final infiniteScrollPaginationPath = depsPath(infiniteScrollPagination);
       _logger.detail(
-        'Package ${infiniteScrollPagination.description.name} found at $infiniteScrollPaginationPath',
+        '''Package ${infiniteScrollPagination.description.name} found at $infiniteScrollPaginationPath''',
       );
       if (!Directory(infiniteScrollPaginationPath).existsSync()) {
         _logger.warn('infinite_scroll_pagination not found in $_pubCache');
