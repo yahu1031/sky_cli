@@ -39,16 +39,6 @@ class UpgradeCommand extends Command<int> {
         name: 'origin',
         directory: cliDir,
       );
-      final scriptFile =
-          File(Platform.script.toFilePath(windows: Platform.isWindows));
-      if (!scriptFile.path.endsWith('.dart') && scriptFile.existsSync()) {
-        _logger
-          ..detail('Listing $cliDir')
-          ..detail('${Directory(cliDir).listSync()}')
-          ..detail('')
-          ..detail('Deleting old CLI...');
-        await scriptFile.delete(recursive: true);
-      }
       _logger.detail('Compiling a new HDFC SKY CLI...');
       final compileArgs = [
         'compile',
@@ -65,10 +55,12 @@ class UpgradeCommand extends Command<int> {
         workingDirectory: cliDir,
         runInShell: true,
       );
-      pr.stdout.transform(utf8.decoder).listen(_logger.detail);
+      pr.stdout.listen((event) {
+        _logger.detail(utf8.decode(event));
+      });
       pr.stderr.transform(utf8.decoder).listen(_logger.err);
-      final exitCode = await Future.wait([pr.exitCode]);
-      _logger.detail('Compile exit code: ${exitCode.first}');
+      final exitCode = await pr.exitCode;
+      _logger.detail('Compile exit code: $exitCode');
       upgradeProcess.complete('Successfully upgraded HDFC SKY CLI');
       exit(ExitCode.success.code);
     } catch (e, s) {

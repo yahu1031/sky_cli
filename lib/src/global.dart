@@ -28,6 +28,8 @@ Future<void> unzipFile(String filePath, Directory targetDirectory) async {
       'Decoding the ${filePath.split(Platform.pathSeparator).last} file...',
     );
     final archive = ZipDecoder().decodeBytes(bytes);
+    final totalFiles = archive.length;
+    var processedFiles = 0;
 
     // Extract the contents of the Zip archive to disk
     for (final file in archive) {
@@ -43,6 +45,10 @@ Future<void> unzipFile(String filePath, Directory targetDirectory) async {
         await Directory(path.join(targetDirectory.path, filename))
             .create(recursive: true);
       }
+      processedFiles++;
+      final percentage =
+          ((processedFiles / totalFiles) * 100).toStringAsFixed(2);
+      logger.detail('Unzipped: $percentage %');
     }
   } catch (e, s) {
     logger
@@ -63,8 +69,14 @@ Future<void> downloadFile(String url, String fileName) async {
     final dartSdk = File(path.join(skyHome, fileName));
     logger.detail('Writing data to $fileName...');
     final fileSink = dartSdk.openWrite();
+    final contentLength = response.contentLength ?? 0;
+    var bytesDownloaded = 0;
     await for (final data in response.stream) {
       fileSink.add(data);
+      bytesDownloaded += data.length;
+      final percentage =
+          (bytesDownloaded / contentLength * 100).toStringAsFixed(2);
+      logger.detail('Downloaded: $percentage %');
     }
     logger
       ..detail('Writing done...')
@@ -78,6 +90,21 @@ Future<void> downloadFile(String url, String fileName) async {
       ..detail('')
       ..detail('StackTraces :')
       ..detail('$s');
+    rethrow;
+  }
+}
+
+Future<void> grantPermissionsRecursively(String filePath) async {
+  try {
+    final fileName = filePath.split(Platform.pathSeparator).last;
+    logger.detail('Granting $fileName permissions...');
+    final result = await Process.run('chmod', ['-R', '777', filePath]);
+    if (result.exitCode != 0) {
+      logger
+        ..detail('Error setting permissions to $fileName')
+        ..detail('${result.stderr}');
+    }
+  } catch (e) {
     rethrow;
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:mason_logger/mason_logger.dart';
@@ -32,13 +33,16 @@ class Git {
       outputDirectory,
     ];
     _logger.detail('Cloning $repo from $user');
-    final result = await Process.run(
+    final result = await Process.start(
       executable,
       arguments,
       runInShell: true,
       workingDirectory: skyHome,
     );
-    if (result.exitCode != 0) {
+    result.stdout.listen((data) => _logger.detail(utf8.decode(data)));
+    result.stderr.listen((err) => _logger.detail('✗ ${utf8.decode(err)}'));
+    final exitCode = await result.exitCode;
+    if (exitCode != 0) {
       _logger
         ..detail(result.stdout.toString())
         ..detail(result.stderr.toString());
@@ -46,7 +50,7 @@ class Git {
         executable,
         arguments,
         '${result.stderr}',
-        result.exitCode,
+        exitCode,
       );
     }
   }
