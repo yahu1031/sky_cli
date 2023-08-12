@@ -5,6 +5,7 @@ import 'package:args/command_runner.dart';
 import 'package:cli_completion/cli_completion.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
+import 'package:pub_semver/pub_semver.dart';
 import 'package:sky/src/commands/commands.dart';
 import 'package:sky/src/commands/git.dart';
 import 'package:sky/src/global.dart' as global;
@@ -78,7 +79,12 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
     // Run the command or show version
     final int? exitCode;
     if (topLevelResults['version'] == true) {
-      _logger.info(packageVersion);
+      _logger
+        ..detail('Major : ${Version.parse(packageVersion).major}')
+        ..detail('Minor : ${Version.parse(packageVersion).minor}')
+        ..detail('Patch : ${Version.parse(packageVersion).patch}')
+        ..detail('Hotfix : ${Version.parse(packageVersion).build}')
+        ..info(packageVersion);
       exitCode = ExitCode.success.code;
     } else {
       exitCode = await super.runCommand(topLevelResults);
@@ -91,9 +97,10 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
     final isUptoDate = await UpgradeCommand(logger: global.logger).isLatest();
     if (!isUptoDate) {
       _logger
-        ..alert('┌────────────────────────┐')
-        ..alert('│    Update Available    │')
-        ..alert('└────────────────────────┘');
+        ..alert('┌─────────────────────────┐')
+        ..alert('│    Update Available.    │')
+        ..alert('│    Run "sky upgrade"    │')
+        ..alert('└─────────────────────────┘');
     }
     final skyHomeExists = Directory(global.skyHome).existsSync();
     final dartSdkExists =
