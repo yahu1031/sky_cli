@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:mason_logger/mason_logger.dart';
+import 'package:path/path.dart' as p;
 import 'package:sky/src/commands/git.dart';
 import 'package:sky/src/global.dart';
 
@@ -49,15 +51,25 @@ class UpgradeCommand extends Command<int> {
       }
       _logger.detail('Compiling a new HDFC SKY CLI...');
       final pr = await Process.start(
-        'dart',
-        ['compile', 'exe', 'bin/sky.dart', '-o', 'sky'],
-        workingDirectory: skyHome,
+        latestDart,
+        [
+          'compile',
+          'exe',
+          'bin/sky.dart',
+          '-o',
+          p.join(skyHome, 'sky'),
+          '--target-os',
+          Platform.operatingSystem
+        ],
+        workingDirectory: cliDir,
         runInShell: true,
         includeParentEnvironment: false,
       );
+      pr.stdout.transform(utf8.decoder).listen(_logger.detail);
+      pr.stderr.transform(utf8.decoder).listen(_logger.err);
       final exitCode = await Future.wait([pr.exitCode]);
-      upgradeProcess.complete('Successfully upgraded HDFC SKY CLI Tool with '
-          'exit code: ${exitCode.first}');
+      _logger.detail('Compile exit code: ${exitCode.first}');
+      upgradeProcess.complete('Successfully upgraded HDFC SKY CLI');
       exit(ExitCode.success.code);
     } catch (e, s) {
       upgradeProcess.fail('Failed Upgrading');
