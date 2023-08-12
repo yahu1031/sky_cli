@@ -35,10 +35,7 @@ class UpgradeCommand extends Command<int> {
         upgradeProcess.complete('Already up to date');
         exit(ExitCode.success.code);
       }
-      await git.remotePrune(
-        name: 'origin',
-        directory: cliDir,
-      );
+      await git.pull();
       _logger.detail('Compiling a new HDFC SKY CLI...');
       final compileArgs = [
         'compile',

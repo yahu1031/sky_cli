@@ -145,18 +145,19 @@ class Git {
     return '${result.stdout}'.trim();
   }
 
-  /// Prunes stale remote branches from the repository at [directory]
-  /// associated with [name].
-  Future<void> remotePrune({
-    required String name,
-    required String directory,
-  }) async {
-    final arguments = ['remote', 'prune', name];
-    _logger.detail('Pruning $directory remote branches...');
+  /// Pulls the latest code with --prune flag
+  Future<void> pull() async {
+    final arguments = ['pull', '--prune'];
+    _logger.detail('Pulling $cliDir remote changes...');
+    await reset(
+      revision: 'HEAD',
+      directory: cliDir,
+      args: ['--hard'],
+    );
     final result = await Process.run(
       executable,
       arguments,
-      workingDirectory: directory,
+      workingDirectory: cliDir,
     );
     if (result.exitCode != 0) {
       _logger
