@@ -35,7 +35,7 @@ class UpgradeCommand extends Command<int> {
       }
       await git.remotePrune(
         name: 'origin',
-        directory: skyHome,
+        directory: cliDir,
       );
       final scriptFile = File(Platform.script.toFilePath());
       if (!scriptFile.path.endsWith('.dart')) {
@@ -68,7 +68,7 @@ class UpgradeCommand extends Command<int> {
   Future<String> _fetchLatestGitHash() async {
     try {
       // Fetch upstream branch's commits and tags
-      await git.fetch(directory: skyHome, args: ['--tags']);
+      await git.fetch(directory: cliDir, args: ['--tags']);
       // Get the latest commit revision of the upstream
       return git.revParse(revision: '@{upstream}', directory: cliDir);
     } catch (e) {
