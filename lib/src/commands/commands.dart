@@ -1,2 +1,3 @@
-export 'sample.cmd.dart';
+export 'clean.cmd.dart';
 export 'setup.cmd.dart';
+export 'upgrade.cmd.dart';

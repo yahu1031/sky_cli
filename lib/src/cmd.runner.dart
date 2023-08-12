@@ -43,6 +43,8 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
       );
 
     addCommand(SetupCommand(logger: _logger));
+    addCommand(CleanCommand(logger: _logger));
+    addCommand(UpgradeCommand(logger: _logger));
   }
 
   final Logger _logger;
@@ -78,12 +80,6 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
   @override
   Future<int?> runCommand(ArgResults topLevelResults) async {
     await init();
-    // Fast track completion command
-    if (topLevelResults.command?.name == 'completion') {
-      await super.runCommand(topLevelResults);
-      return ExitCode.success.code;
-    }
-
     // Verbose logs
     _logger
       ..detail('Argument information:')
@@ -135,10 +131,14 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
         return;
       } else {
         for (final rc in ['.zshrc', '.bashrc']) {
-          await File(path.join(home, rc)).writeAsString(
-            '\nexport PATH=\$PATH:$skyHome',
-            mode: FileMode.append,
-          );
+          final rcData = await File(path.join(home, rc)).readAsString();
+          final export = '\nexport PATH="\$PATH:$skyHome"\n';
+          if (!rcData.contains(export)) {
+            await File(path.join(home, rc)).writeAsString(
+              export,
+              mode: FileMode.append,
+            );
+          }
           await Process.start(
             'source',
             [rc],
@@ -147,6 +147,13 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
             includeParentEnvironment: false,
           );
         }
+        final skyFile = File(
+          path.join(
+            Directory.current.path,
+            Platform.script.path.split(Platform.pathSeparator).last,
+          ),
+        );
+        await skyFile.copy(path.join(skyHome, 'sky'));
         await Process.start(
           'chmod',
           ['+x', 'sky'],
@@ -154,46 +161,14 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
           runInShell: true,
           includeParentEnvironment: false,
         );
-        await File(path.join(Directory.current.path, 'sky'))
-            .delete(recursive: true);
+        if (skyFile.existsSync()) {
+          skyFile.deleteSync();
+        }
         initProcess.complete('Initialized HDFC SKY');
       }
     } catch (e) {
       initProcess
         ..fail('Failed Initializing')
-        ..fail(e.toString());
-    }
-  }
-
-  Future<void> upgrade() async {
-    if (!Directory(skyHome).existsSync()) {
-      return;
-    }
-    final upgradeProcess = _logger.progress('Upgrading HDFC SKY CLI...');
-    try {
-      final res = await runGit(
-        ['pull'],
-        processWorkingDir: skyHome,
-      );
-      if (res.exitCode != 0) {
-        upgradeProcess
-          ..fail('Failed Upgrading')
-          ..fail(res.stderr.toString());
-        return;
-      } else {
-        final pr = await Process.start(
-          'dart',
-          ['compile', 'exe', 'bin/sky.dart', '-o', 'sky'],
-          workingDirectory: skyHome,
-          runInShell: true,
-          includeParentEnvironment: false,
-        );
-        await Future.wait([pr.exitCode]);
-        upgradeProcess.complete('Upgraded HDFC SKY CLI Tool');
-      }
-    } catch (e) {
-      upgradeProcess
-        ..fail('Failed Upgrading')
         ..fail(e.toString());
     }
   }
