@@ -37,9 +37,14 @@ class UpgradeCommand extends Command<int> {
         name: 'origin',
         directory: cliDir,
       );
-      final scriptFile = File(Platform.script.toFilePath());
+      final scriptFile =
+          File(Platform.script.toFilePath(windows: Platform.isWindows));
       if (!scriptFile.path.endsWith('.dart') && scriptFile.existsSync()) {
-        _logger.detail('Deleting old CLI...');
+        _logger
+          ..detail('Listing $cliDir')
+          ..detail('${Directory(cliDir).listSync()}')
+          ..detail('')
+          ..detail('Deleting old CLI...');
         await scriptFile.delete(recursive: true);
       }
       _logger.detail('Compiling a new HDFC SKY CLI...');
@@ -55,10 +60,9 @@ class UpgradeCommand extends Command<int> {
           'exit code: ${exitCode.first}');
       exit(ExitCode.success.code);
     } catch (e, s) {
-      upgradeProcess
-        ..fail('Failed Upgrading')
-        ..fail(e.toString());
+      upgradeProcess.fail('Failed Upgrading');
       _logger
+        ..detail('$e')
         ..detail('StackTraces:')
         ..detail('$s');
       exit(ExitCode.software.code);

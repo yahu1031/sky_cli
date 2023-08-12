@@ -100,8 +100,9 @@ class CleanCommand extends Command<int> {
       );
       progress.complete('Successfully cleaned project');
     } catch (e, s) {
-      progress.fail('Failed to clean project with error: $e');
+      progress.fail('Failed to clean project');
       _logger
+        ..detail('$e')
         ..detail('StackTraces:')
         ..detail('$s');
       exit(ExitCode.software.code);

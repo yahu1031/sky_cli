@@ -325,8 +325,9 @@ class SetupCommand extends Command<int> {
       await pubGet.exitCode;
       pubProgress.complete('Successfully fetched packages');
     } catch (e, s) {
-      pubProgress.fail('Failed to fetch packages with error: $e');
+      pubProgress.fail('Failed to fetch packages');
       _logger
+        ..detail('$e')
         ..detail('StackTraces:')
         ..detail('$s');
 
@@ -352,8 +353,9 @@ class SetupCommand extends Command<int> {
           ? podProgress.complete('Successfully installed pods')
           : podProgress.fail('Failed to install pods');
     } catch (e, s) {
-      podProgress.fail('Failed to install pods with error: $e');
+      podProgress.fail('Failed to install pods');
       _logger
+        ..detail('$e')
         ..detail('StackTraces:')
         ..detail('$s');
 
