@@ -26,7 +26,7 @@ class UpgradeCommand extends Command<int> {
     if (!Directory(skyHome).existsSync()) {
       exit(ExitCode.osFile.code);
     }
-    final upgradeProcess = _logger.progress('Upgrading HDFC SKY CLI...');
+    final upgradeProcess = _logger.progress('Checking for updates...');
     try {
       final isUptoDate = await isLatest();
       if (isUptoDate) {
