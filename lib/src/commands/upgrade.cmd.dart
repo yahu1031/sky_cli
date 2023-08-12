@@ -38,7 +38,7 @@ class UpgradeCommand extends Command<int> {
         directory: cliDir,
       );
       final scriptFile = File(Platform.script.toFilePath());
-      if (!scriptFile.path.endsWith('.dart')) {
+      if (!scriptFile.path.endsWith('.dart') && scriptFile.existsSync()) {
         _logger.detail('Deleting old CLI...');
         await scriptFile.delete(recursive: true);
       }
