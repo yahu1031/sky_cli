@@ -70,7 +70,7 @@ class UpgradeCommand extends Command<int> {
       // Fetch upstream branch's commits and tags
       await git.fetch(directory: skyHome, args: ['--tags']);
       // Get the latest commit revision of the upstream
-      return git.revParse(revision: '@{upstream}', directory: skyHome);
+      return git.revParse(revision: '@{upstream}', directory: cliDir);
     } catch (e) {
       rethrow;
     }
@@ -79,7 +79,7 @@ class UpgradeCommand extends Command<int> {
   Future<String> _fetchCurrentGitHash() async {
     try {
       // Get the commit revision of HEAD
-      return git.revParse(revision: 'HEAD', directory: skyHome);
+      return git.revParse(revision: 'HEAD', directory: cliDir);
     } catch (e) {
       rethrow;
     }
