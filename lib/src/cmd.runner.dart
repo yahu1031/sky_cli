@@ -88,6 +88,13 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
   }
 
   Future<void> init() async {
+    final isUptoDate = await UpgradeCommand(logger: global.logger).isLatest();
+    if (!isUptoDate) {
+      _logger
+        ..alert('┌────────────────────────┐')
+        ..alert('│    Update Available    │')
+        ..alert('└────────────────────────┘');
+    }
     final skyHomeExists = Directory(global.skyHome).existsSync();
     final dartSdkExists =
         Directory(path.join(global.skyHome, 'dart-sdk')).existsSync();
