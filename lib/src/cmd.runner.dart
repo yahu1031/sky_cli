@@ -77,7 +77,10 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
 
   @override
   Future<int?> runCommand(ArgResults topLevelResults) async {
-    await init(isUpgradeCmd: topLevelResults.command?.name == 'upgrade');
+    await init(
+      isUpgradeCmd: topLevelResults.command?.name == 'upgrade' ||
+          topLevelResults['version'] == true,
+    );
 
     // Run the command or show version
     final int? exitCode;
@@ -85,9 +88,11 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
       _logger
         ..detail('Major : ${Version.parse(packageVersion).major}')
         ..detail('Minor : ${Version.parse(packageVersion).minor}')
-        ..detail('Patch : ${Version.parse(packageVersion).patch}')
-        ..detail('Hotfix : ${Version.parse(packageVersion).build}')
-        ..info(packageVersion);
+        ..detail('Patch : ${Version.parse(packageVersion).patch}');
+      if (Version.parse(packageVersion).build.isNotEmpty) {
+        _logger.detail('Hotfix : ${Version.parse(packageVersion).build}');
+      }
+      _logger.info(packageVersion);
       exitCode = ExitCode.success.code;
     } else {
       exitCode = await super.runCommand(topLevelResults);
