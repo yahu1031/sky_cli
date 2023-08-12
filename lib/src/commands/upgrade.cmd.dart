@@ -1,11 +1,9 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
-import 'package:git/git.dart';
-import 'package:http/http.dart' as http;
 import 'package:mason_logger/mason_logger.dart';
-import 'package:sky/src/cmd.runner.dart';
+import 'package:sky/src/commands/git.dart';
+import 'package:sky/src/global.dart';
 
 /// `sky upgrade`
 /// A [Command] to exemplify a sub command
@@ -30,70 +28,74 @@ class UpgradeCommand extends Command<int> {
     }
     final upgradeProcess = _logger.progress('Upgrading HDFC SKY CLI...');
     try {
-      var remoteSHA = '';
-      // check if local repo and remote repo are in sync
-// https://api.github.com/repos/yahu1031/sky_cli/commits
-      final headersList = {
-        'Accept': '*/*',
-      };
-      final url =
-          Uri.parse('https://api.github.com/repos/yahu1031/sky_cli/commits');
-
-      final req = http.Request('GET', url);
-      req.headers.addAll(headersList);
-
-      final reqRes = await req.send();
-      final resBody = await reqRes.stream.bytesToString();
-      if (reqRes.statusCode >= 200 && reqRes.statusCode < 300) {
-        final resObj = jsonDecode(resBody);
-        remoteSHA =
-            (resObj is List) ? (resObj.first as Map)['sha'].toString() : '';
-      } else {
-        upgradeProcess
-          ..fail('Failed Upgrading')
-          ..fail('Error: $resBody');
-        exit(ExitCode.software.code);
-      }
-      final shaCmd = await runGit(
-        ['log', '-1', '--format=format:"%H'],
-        processWorkingDir: skyHome,
-      );
-      final localSHA = shaCmd.stdout.toString().replaceAll('"', '');
-      if (remoteSHA == localSHA) {
+      final isUptoDate = await isLatest();
+      if (isUptoDate) {
         upgradeProcess.complete('Already up to date');
         exit(ExitCode.success.code);
       }
-      final res = await runGit(
-        ['pull'],
-        processWorkingDir: skyHome,
+      await git.remotePrune(
+        name: 'origin',
+        directory: skyHome,
       );
-      if (res.exitCode != 0) {
-        upgradeProcess
-          ..fail('Failed Upgrading')
-          ..fail(res.stderr.toString());
-        exit(ExitCode.software.code);
-      } else {
-        upgradeProcess.update('Building sky...');
-        final scriptFile = File(Platform.script.toFilePath());
-        if (!scriptFile.path.endsWith('.dart')) {
-          await scriptFile.delete(recursive: true);
-        }
-        final pr = await Process.start(
-          'dart',
-          ['compile', 'exe', 'bin/sky.dart', '-o', 'sky'],
-          workingDirectory: skyHome,
-          runInShell: true,
-          includeParentEnvironment: false,
-        );
-        await Future.wait([pr.exitCode]);
-        upgradeProcess.complete('Successfully upgraded HDFC SKY CLI Tool');
+      final scriptFile = File(Platform.script.toFilePath());
+      if (!scriptFile.path.endsWith('.dart')) {
+        _logger.detail('Deleting old CLI...');
+        await scriptFile.delete(recursive: true);
       }
+      _logger.detail('Compiling a new HDFC SKY CLI...');
+      final pr = await Process.start(
+        'dart',
+        ['compile', 'exe', 'bin/sky.dart', '-o', 'sky'],
+        workingDirectory: skyHome,
+        runInShell: true,
+        includeParentEnvironment: false,
+      );
+      final exitCode = await Future.wait([pr.exitCode]);
+      upgradeProcess.complete('Successfully upgraded HDFC SKY CLI Tool with '
+          'exit code: ${exitCode.first}');
       exit(ExitCode.success.code);
-    } catch (e) {
+    } catch (e, s) {
       upgradeProcess
         ..fail('Failed Upgrading')
         ..fail(e.toString());
+      _logger
+        ..detail('StackTraces:')
+        ..detail('$s');
       exit(ExitCode.software.code);
+    }
+  }
+
+  Future<String> _fetchLatestGitHash() async {
+    try {
+      // Fetch upstream branch's commits and tags
+      await git.fetch(directory: skyHome, args: ['--tags']);
+      // Get the latest commit revision of the upstream
+      return git.revParse(revision: '@{upstream}', directory: skyHome);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<String> _fetchCurrentGitHash() async {
+    try {
+      // Get the commit revision of HEAD
+      return git.revParse(revision: 'HEAD', directory: skyHome);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<bool> isLatest() async {
+    try {
+      final currentVersion = await _fetchCurrentGitHash();
+      _logger.detail('Current version: $currentVersion');
+      final latestVersion = await _fetchLatestGitHash();
+      _logger
+        ..detail('Latest version: $latestVersion')
+        ..detail('Update available: ${currentVersion != latestVersion}');
+      return currentVersion == latestVersion;
+    } catch (e) {
+      rethrow;
     }
   }
 }

@@ -21,7 +21,7 @@ class CleanCommand extends Command<int> {
   Future<int> run() async {
     final progress = _logger.progress('Cleaning the project');
     try {
-      await cleanProject(progress);
+      await cleanProject();
       progress.complete('Project cleaned');
       return ExitCode.success.code;
     } catch (e) {
@@ -31,7 +31,8 @@ class CleanCommand extends Command<int> {
     }
   }
 
-  static Future<void> cleanProject(Progress progress) async {
+  Future<void> cleanProject() async {
+    final progress = _logger.progress('Cleaning Flutter project...');
     final cleanFiles = <String>[
       'ios/Pods',
       'ios/Podfile.lock',
@@ -41,8 +42,8 @@ class CleanCommand extends Command<int> {
       'ios/Runner/GeneratedPluginRegistrant.h',
       'pubspec.lock',
     ];
-    progress.update('Cleaning Flutter project...');
     try {
+      _logger.detail('Executing `flutter clean`...');
       await Process.start(
         'flutter',
         ['clean'],
@@ -58,13 +59,20 @@ class CleanCommand extends Command<int> {
         }
       }
       progress.update('Cleaning Android project...');
+      _logger.detail('Checking for gradlew file');
       final gradlewFile =
           File(p.join(Directory.current.path, 'android', 'gradlew'));
       if (!gradlewFile.existsSync()) {
+        _logger
+          ..detail('gradlew file not found')
+          ..detail(
+            'Creating a new gradlew file in ${p.join(Directory.current.path, 'android')}',
+          );
         await gradlewFile.create(recursive: true);
         final url = Uri.parse(
           'https://cdn.sourceb.in/bins/uvyIOoOWHl/0',
         );
+        _logger.detail('Downloading gradlew script...');
 
         final req = http.Request('GET', url);
 
@@ -72,24 +80,30 @@ class CleanCommand extends Command<int> {
         final resBody = await res.stream.bytesToString();
 
         if (res.statusCode >= 200 && res.statusCode < 300) {
+          _logger.detail('Writing gradlew script to ${gradlewFile.path}...');
           await gradlewFile.writeAsString(resBody);
         } else {
           progress.fail('Failed to write required android files');
         }
       }
+      _logger.detail('Granting permissions to gradlew file');
       await Process.start(
         'chmod',
         ['+x', 'gradlew'],
         workingDirectory: p.join(Directory.current.path, 'android'),
       );
+      _logger.detail('Running `gradlew clean`...');
       await Process.start(
         './gradlew',
         ['clean'],
         workingDirectory: p.join(Directory.current.path, 'android'),
       );
       progress.complete('Successfully cleaned project');
-    } catch (e) {
+    } catch (e, s) {
       progress.fail('Failed to clean project with error: $e');
+      _logger
+        ..detail('StackTraces:')
+        ..detail('$s');
       exit(ExitCode.software.code);
     }
   }

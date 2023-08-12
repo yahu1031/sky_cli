@@ -1,9 +1,19 @@
 import 'dart:io';
 
+import 'package:scoped/scoped.dart';
 import 'package:sky/src/cmd.runner.dart';
+import 'package:sky/src/commands/git.dart';
+import 'package:sky/src/global.dart';
 
 Future<void> main(List<String> args) async {
-  await _flushThenExit(await SkyCommandRunner().run(args));
+  await _flushThenExit(
+    await runScoped(
+      () async => SkyCommandRunner(logger: logger).run(args),
+      values: {
+        gitRef,
+      },
+    ),
+  );
 }
 
 /// Flushes the stdout and stderr streams, then exits the program with the given

@@ -41,12 +41,16 @@ class SetupCommand extends Command<int> {
     try {
       await _checkPackagesCode();
       progress
-        ..complete('Project setup completed')
-        ..update('Cleaning the project');
-      await CleanCommand.cleanProject(progress);
+        ..update('Cleaning the project')
+        ..complete('Project setup completed');
+      await CleanCommand(logger: _logger).cleanProject();
       return ExitCode.success.code;
-    } catch (e) {
-      _logger.err(e.toString());
+    } catch (e, s) {
+      _logger
+        ..err(e.toString())
+        ..detail('StackTraces:')
+        ..detail('$s');
+
       return ExitCode.ioError.code;
     }
   }
@@ -64,11 +68,14 @@ class SetupCommand extends Command<int> {
       }
       progress.complete('Found the HDFC SKY project');
       return true;
-    } catch (e) {
+    } catch (e, s) {
       progress.fail();
       _logger
         ..err('Failed looking up HDFC SKY app project')
-        ..err('Error : $e');
+        ..err('Error : $e')
+        ..detail('StackTraces:')
+        ..detail('$s');
+
       rethrow;
     }
   }
@@ -78,24 +85,37 @@ class SetupCommand extends Command<int> {
     try {
       final lockFile = File(p.join(Directory.current.path, 'pubspec.lock'));
       if (!lockFile.existsSync()) {
+        _logger.detail(
+          "Pubspec.lock for HDFC SKY project wasn't found at ${Directory.current.path}",
+        );
         progress.fail();
         _logger.err('No HDFC SKY project found. Please run `sky clone` first.');
         exit(1);
       }
       progress.update('Reading project...');
       final lock = await lockFile.readAsString();
+      _logger
+        ..detail('Pubspec.lock read')
+        ..detail(lock);
       final yaml = loadYaml(lock);
       // convert yaml to json
       final yamlString = jsonEncode(yaml);
       final lockMap =
           LockMap.fromJson(jsonDecode(yamlString) as Map<String, dynamic>);
       progress.complete('Successfully read project');
+      _logger
+        ..detail('Found $packageName Details')
+        ..detail(lockMap.packages[packageName].toString())
+        ..detail('');
       return lockMap.packages[packageName];
-    } catch (e) {
+    } catch (e, s) {
       progress.fail();
       _logger
         ..err('Failed checking packages version.')
-        ..err('Error : $e');
+        ..err('Error : $e')
+        ..detail('StackTraces:')
+        ..detail('$s');
+
       exit(ExitCode.osFile.code);
     }
   }
@@ -120,11 +140,14 @@ class SetupCommand extends Command<int> {
       await _pubGet();
       await _podInstall();
       progress.complete('Packages code checked');
-    } catch (e) {
+    } catch (e, s) {
       progress.fail();
       _logger
         ..err('Failed to check packages code.')
-        ..err('Error: $e');
+        ..err('Error: $e')
+        ..detail('StackTraces:')
+        ..detail('$s');
+
       exit(ExitCode.software.code);
     }
   }
@@ -136,6 +159,9 @@ class SetupCommand extends Command<int> {
     try {
       // check if infinite_scroll_pagination is installed in _pubCache
       final infiniteScrollPaginationPath = depsPath(infiniteScrollPagination);
+      _logger.detail(
+        'Package ${infiniteScrollPagination.description.name} found at $infiniteScrollPaginationPath',
+      );
       if (!Directory(infiniteScrollPaginationPath).existsSync()) {
         _logger.warn('infinite_scroll_pagination not found in $_pubCache');
       } else {
@@ -171,9 +197,13 @@ class SetupCommand extends Command<int> {
           progress.complete('infinite_scroll_pagination fixed');
         }
       }
-    } catch (e) {
+    } catch (e, s) {
       progress.fail();
-      _logger.err(e.toString());
+      _logger
+        ..err(e.toString())
+        ..detail('StackTraces:')
+        ..detail('$s');
+
       rethrow;
     }
   }
@@ -183,6 +213,9 @@ class SetupCommand extends Command<int> {
     try {
       // check if firebase_core is installed in _pubCache
       final firebaseCorePath = depsPath(firebasePkg);
+      _logger.detail(
+        'Package ${firebasePkg.description.name} found at $firebaseCorePath',
+      );
       if (!Directory(firebaseCorePath).existsSync()) {
         _logger.warn('Firebase core not found in $_pubCache');
       } else {
@@ -214,9 +247,13 @@ class SetupCommand extends Command<int> {
         }
       }
       return;
-    } catch (e) {
+    } catch (e, s) {
       progress.fail();
-      _logger.err(e.toString());
+      _logger
+        ..err(e.toString())
+        ..detail('StackTraces:')
+        ..detail('$s');
+
       rethrow;
     }
   }
@@ -226,6 +263,9 @@ class SetupCommand extends Command<int> {
     try {
       // check if firebase_core is installed in _pubCache
       final graphqlPath = depsPath(graphqlPkg);
+      _logger.detail(
+        'Package ${graphqlPkg.description.name} found at $graphqlPath',
+      );
       if (!Directory(graphqlPath).existsSync()) {
         _logger.warn('GraphQL not found in $_pubCache');
       } else {
@@ -258,9 +298,13 @@ class SetupCommand extends Command<int> {
         }
       }
       return;
-    } catch (e) {
+    } catch (e, s) {
       progress.fail();
-      _logger.err(e.toString());
+      _logger
+        ..err(e.toString())
+        ..detail('StackTraces:')
+        ..detail('$s');
+
       rethrow;
     }
   }
@@ -268,17 +312,23 @@ class SetupCommand extends Command<int> {
   Future<void> _pubGet() async {
     final pubProgress = _logger.progress('Fetching packages...');
     try {
+      _logger
+          .detail('Executing `flutter pub get` in ${Directory.current.path}');
       final pubGet = await Process.start(
         'flutter',
         ['pub', 'get'],
         workingDirectory: Directory.current.path,
       );
-      pubGet.stdout.transform(utf8.decoder).listen(_logger.info);
+      pubGet.stdout.transform(utf8.decoder).listen(_logger.detail);
       pubGet.stderr.transform(utf8.decoder).listen(_logger.err);
       await pubGet.exitCode;
       pubProgress.complete('Successfully fetched packages');
-    } catch (e) {
+    } catch (e, s) {
       pubProgress.fail('Failed to fetch packages with error: $e');
+      _logger
+        ..detail('StackTraces:')
+        ..detail('$s');
+
       exit(ExitCode.software.code);
     }
   }
@@ -286,17 +336,26 @@ class SetupCommand extends Command<int> {
   Future<void> _podInstall() async {
     final podProgress = _logger.progress('Installing pods...');
     try {
+      _logger.detail(
+        'Executing `pod install` in ${p.join(Directory.current.path, 'ios')}',
+      );
       final podInstall = await Process.start(
         'pod',
         ['install', '--repo-update'],
         workingDirectory: p.join(Directory.current.path, 'ios'),
       );
-      podInstall.stdout.transform(utf8.decoder).listen(_logger.info);
+      podInstall.stdout.transform(utf8.decoder).listen(_logger.detail);
       podInstall.stderr.transform(utf8.decoder).listen(_logger.err);
-      await podInstall.exitCode;
-      podProgress.complete('Successfully installed pods');
-    } catch (e) {
+      final exitCode = await podInstall.exitCode;
+      exitCode == ExitCode.success.code
+          ? podProgress.complete('Successfully installed pods')
+          : podProgress.fail('Failed to install pods');
+    } catch (e, s) {
       podProgress.fail('Failed to install pods with error: $e');
+      _logger
+        ..detail('StackTraces:')
+        ..detail('$s');
+
       exit(ExitCode.software.code);
     }
   }
