@@ -60,7 +60,7 @@ class SetupCommand extends Command<int> {
       final projName = yamlObject['name'];
       if (projName != 'hdfcapp') {
         progress.fail('Looks like you are not in HDFC SKY app project');
-        return false;
+        exit(1);
       }
       progress.complete('Found the HDFC SKY project');
       return true;
