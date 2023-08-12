@@ -74,7 +74,10 @@ class UpgradeCommand extends Command<int> {
         exit(ExitCode.software.code);
       } else {
         upgradeProcess.update('Building sky...');
-        await File(Platform.script.toFilePath()).delete(recursive: true);
+        final scriptFile = File(Platform.script.toFilePath());
+        if (!scriptFile.path.endsWith('.dart')) {
+          await scriptFile.delete(recursive: true);
+        }
         final pr = await Process.start(
           'dart',
           ['compile', 'exe', 'bin/sky.dart', '-o', 'sky'],
