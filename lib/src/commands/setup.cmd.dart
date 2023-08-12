@@ -50,6 +50,28 @@ class SetupCommand extends Command<int> {
     }
   }
 
+  Future<bool> isHDFCproject() async {
+    final progress = _logger.progress('Checking the project');
+    try {
+      final yamlFile = File(p.join(Directory.current.path, 'pubspec.yaml'));
+      final yamlData = await yamlFile.readAsString();
+      final yamlObject = loadYaml(yamlData) as YamlMap;
+      final projName = yamlObject['name'];
+      if (projName != 'hdfcapp') {
+        progress.fail('Looks like you are not in HDFC SKY app project');
+        return false;
+      }
+      progress.complete('Found the HDFC SKY project');
+      return true;
+    } catch (e) {
+      progress.fail();
+      _logger
+        ..err('Failed looking up HDFC SKY app project')
+        ..err('Error : $e');
+      rethrow;
+    }
+  }
+
   Future<Package?> _fetchPackageFromLock(String packageName) async {
     final progress = _logger.progress('Looking up into HDFC SKY project...');
     try {
