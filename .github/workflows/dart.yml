@@ -35,7 +35,7 @@ jobs:
       - name: Installing dependencies
         run: dart pub get
       - name: Building executable for macos x64 on Ventura
-        run: dart compile exe bin/sky.dart --tagret-os macos -o sky
+        run: dart compile exe bin/sky.dart -o sky
       - name: Releasing the executable
         uses: ncipollo/release-action@v1
         with:
