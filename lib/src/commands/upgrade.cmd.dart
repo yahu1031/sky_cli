@@ -99,7 +99,11 @@ class UpgradeCommand extends Command<int> {
         ..detail('Latest version: $latestVersion')
         ..detail('Update available: ${currentVersion != latestVersion}');
       return currentVersion == latestVersion;
-    } catch (e) {
+    } catch (e, s) {
+      _logger
+        ..detail('Error checking for updates: $e')
+        ..detail('StackTraces:')
+        ..detail('$s');
       rethrow;
     }
   }
@@ -107,27 +111,11 @@ class UpgradeCommand extends Command<int> {
   Future<void> updatePrompt() async {
     final isUptoDate = await isLatest();
     if (!isUptoDate) {
-      _logger
-        ..warn(
-          '┌─────────────────────────┐',
-          style: (message) => yellow.wrap(styleBold.wrap(message)),
-          tag: '',
-        )
-        ..warn(
-          '│    Update Available.    │',
-          style: (message) => yellow.wrap(styleBold.wrap(message)),
-          tag: '',
-        )
-        ..warn(
-          '│    Run "sky upgrade"    │',
-          style: (message) => yellow.wrap(styleBold.wrap(message)),
-          tag: '',
-        )
-        ..warn(
-          '└─────────────────────────┘',
-          style: (message) => yellow.wrap(styleBold.wrap(message)),
-          tag: '',
-        );
+      _logger.warn(
+        upgradePromptFrame,
+        style: (message) => yellow.wrap(styleBold.wrap(message)),
+        tag: '',
+      );
     }
   }
 }

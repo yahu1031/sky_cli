@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -44,11 +45,13 @@ class CleanCommand extends Command<int> {
     ];
     try {
       _logger.detail('Executing `flutter clean`...');
-      await Process.start(
+      final flutterClean = await Process.start(
         'flutter',
         ['clean'],
         workingDirectory: Directory.current.path,
       );
+      flutterClean.stdout.listen((event) => _logger.detail(utf8.decode(event)));
+      flutterClean.stderr.transform(utf8.decoder).listen(_logger.err);
       progress.update('Cleaning iOS project...');
       for (var i = 0; i < cleanFiles.length; i++) {
         final file = i == 4 || i == 5 || i == 6
@@ -58,6 +61,21 @@ class CleanCommand extends Command<int> {
           file.deleteSync(recursive: true);
         }
       }
+      final podCacheClean = await Process.start(
+        'pod',
+        ['cache', 'clean', '--all'],
+        workingDirectory: p.join(Directory.current.path, 'ios'),
+      );
+      podCacheClean.stdout
+          .listen((event) => _logger.detail(utf8.decode(event)));
+      podCacheClean.stderr.transform(utf8.decoder).listen(_logger.err);
+      final podClean = await Process.start(
+        'pod',
+        ['deintegrate'],
+        workingDirectory: p.join(Directory.current.path, 'ios'),
+      );
+      podClean.stdout.listen((event) => _logger.detail(utf8.decode(event)));
+      podClean.stderr.transform(utf8.decoder).listen(_logger.err);
       progress.update('Cleaning Android project...');
       _logger.detail('Checking for gradlew file');
       final gradlewFile =
@@ -93,11 +111,13 @@ class CleanCommand extends Command<int> {
         workingDirectory: p.join(Directory.current.path, 'android'),
       );
       _logger.detail('Running `gradlew clean`...');
-      await Process.start(
+      final gradleClean = await Process.start(
         './gradlew',
         ['clean'],
         workingDirectory: p.join(Directory.current.path, 'android'),
       );
+      gradleClean.stdout.listen((event) => _logger.detail(utf8.decode(event)));
+      gradleClean.stderr.listen((err) => _logger.detail(utf8.decode(err)));
       progress.complete('Successfully cleaned project');
     } catch (e, s) {
       progress.fail('Failed to clean project');

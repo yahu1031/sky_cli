@@ -7,7 +7,6 @@ import 'package:cli_completion/cli_completion.dart';
 import 'package:http/http.dart';
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
-import 'package:pub_semver/pub_semver.dart';
 import 'package:sky/src/commands/commands.dart';
 import 'package:sky/src/commands/git.dart';
 import 'package:sky/src/global.dart' as global;
@@ -26,7 +25,7 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
   SkyCommandRunner({
     Logger? logger,
   })  : _logger = logger ?? global.logger,
-        super('sky', 'HDFC Sky CLI tool for flutter project.') {
+        super(global.executableName, global.description) {
     // Add root options and flags
     argParser
       ..addFlag(
@@ -86,11 +85,12 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
     final int? exitCode;
     if (topLevelResults['version'] == true) {
       _logger
-        ..detail('Major : ${Version.parse(packageVersion).major}')
-        ..detail('Minor : ${Version.parse(packageVersion).minor}')
-        ..detail('Patch : ${Version.parse(packageVersion).patch}');
-      if (Version.parse(packageVersion).build.isNotEmpty) {
-        _logger.detail('Hotfix : ${Version.parse(packageVersion).build}');
+        ..detail('Major : ${packageVersion.split('.').first}')
+        ..detail('Minor : ${packageVersion.split('.')[1]}')
+        ..detail('Patch : ${packageVersion.split('.')[2].split('+').first})}');
+      if (packageVersion.split('.')[2].split('+')[1].isNotEmpty) {
+        _logger
+            .detail('Hotfix : ${packageVersion.split('.')[2].split('+')[1]}');
       }
       _logger.info(packageVersion);
       exitCode = ExitCode.success.code;

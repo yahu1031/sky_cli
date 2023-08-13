@@ -5,6 +5,10 @@ import 'package:http/http.dart' as http;
 import 'package:mason_logger/mason_logger.dart';
 import 'package:path/path.dart' as path;
 
+const executableName = 'sky';
+
+const description = 'HDFC Sky CLI tool for flutter project.';
+
 final home = Platform.environment['HOME'] ?? '~';
 
 final skyHome = path.join(home, '.sky');
@@ -14,6 +18,12 @@ final cliDir = path.join(skyHome, 'cli');
 final latestDart = path.join(skyHome, 'dart-sdk', 'bin', 'dart');
 
 final Logger logger = Logger();
+
+const upgradePromptFrame = '''
+  ┌─────────────────────────┐
+  │    Update Available.    │
+  │    Run "sky upgrade"    │
+  └─────────────────────────┘''';
 
 Future<void> unzipFile(String filePath, Directory targetDirectory) async {
   try {
