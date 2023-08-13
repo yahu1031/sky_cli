@@ -3,6 +3,8 @@ name: Release of x64 executable
 on:
   push:
     branches: ["main"]
+    tags:
+      - "*"
   pull_request:
     branches: ["main"]
 
