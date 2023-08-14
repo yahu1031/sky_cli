@@ -19,3 +19,4 @@ coverage/
 sky
 *.zip
 *.exe
+.DS_Store

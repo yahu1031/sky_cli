@@ -87,8 +87,8 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
       _logger
         ..detail('Major : ${packageVersion.split('.').first}')
         ..detail('Minor : ${packageVersion.split('.')[1]}')
-        ..detail('Patch : ${packageVersion.split('.')[2].split('+').first})}');
-      if (packageVersion.split('.')[2].split('+')[1].isNotEmpty) {
+        ..detail('Patch : ${packageVersion.split('.')[2].split('+').first}');
+      if (packageVersion.split('.')[2].split('+').length > 1) {
         _logger
             .detail('Hotfix : ${packageVersion.split('.')[2].split('+')[1]}');
       }
@@ -185,22 +185,25 @@ class SkyCommandRunner extends CompletionCommandRunner<int> {
         );
       }
       for (final rc in ['.zshrc', '.bashrc']) {
-        final rcData = await File(path.join(global.home, rc)).readAsString();
-        final export = '\nexport PATH="\$PATH:${global.skyHome}"\n';
-        if (!rcData.contains(export)) {
-          _logger.detail('Adding HDFC SKY CLI to $rc...');
-          await File(path.join(global.home, rc)).writeAsString(
-            export,
-            mode: FileMode.append,
+        final rcFile = File(path.join(global.home, rc));
+        if (rcFile.existsSync()) {
+          final rcData = await rcFile.readAsString();
+          final export = '\nexport PATH="\$PATH:${global.skyHome}"\n';
+          if (!rcData.contains(export)) {
+            _logger.detail('Adding HDFC SKY CLI to $rc...');
+            await rcFile.writeAsString(
+              export,
+              mode: FileMode.append,
+            );
+          }
+          await Process.start(
+            'source',
+            [rc],
+            workingDirectory: global.home,
+            runInShell: true,
+            includeParentEnvironment: false,
           );
         }
-        await Process.start(
-          'source',
-          [rc],
-          workingDirectory: global.home,
-          runInShell: true,
-          includeParentEnvironment: false,
-        );
       }
       _logger.detail('Cleaning up old CLI...');
       final skyFile = File(Platform.script.path);
